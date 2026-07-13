@@ -9,12 +9,14 @@ jobs:
   scan:
     runs-on: ubuntu-latest
     steps:
-      - name: Install gmgn-cli
-        run: npm install -g gmgn-cli
-        
-      - name: Run LP Scan
+      - name: Install gmgn-cli & config
         env:
           GMGN_API_KEY: ${{ secrets.GMGN_API_KEY }}
+        run: |
+          npm install -g gmgn-cli
+          gmgn-cli config --apply "$GMGN_API_KEY"
+          
+      - name: Run LP Scan
         run: |
           gmgn-cli market trending \
             --chain robinhood \
@@ -29,7 +31,7 @@ jobs:
           TG_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          pip install requests -q
+          pip install requests -q 2>/dev/null
           python3 -c "
 import json, os, requests
 with open('result.json') as f:
@@ -37,17 +39,24 @@ with open('result.json') as f:
 tokens = data.get('data', {}).get('rank', [])
 token = os.environ['TG_TOKEN']
 chat_id = os.environ['TG_CHAT_ID']
+if not tokens:
+    print('No tokens found')
+    exit(0)
 for t in tokens:
-    name = t.get('name','?')
-    sym = t.get('symbol','?')
-    addr = t.get('address','')
-    vol = t.get('volume',0)
-    liq = t.get('liquidity',0)
-    mc = t.get('market_cap',0)
-    fmt = lambda n: f'\${n/1e6:.2f}M' if n>=1e6 else (f'\${n/1e3:.1f}K' if n>=1e3 else f'\${n:.0f}')
-    msg = f'🔥 LP Scout - {sym}\n{name}\nVol 5m: {fmt(vol)} | Liq: {fmt(liq)}\nMC: {fmt(mc)}\nhttps://gmgn.ai/robinhood/token/{addr}'
+    n = t.get('name','?')
+    s = t.get('symbol','?')
+    a = t.get('address','')
+    v = t.get('volume',0)
+    l = t.get('liquidity',0)
+    m = t.get('market_cap',0)
+    def f(x):
+        if x>=1e6: return f'${x/1e6:.2f}M'
+        if x>=1e3: return f'${x/1e3:.1f}K'
+        return f'${x:.0f}'
+    msg = f'🔥 LP Scout - {s}\n{n}\nVol: {f(v)} | Liq: {f(l)}\nMC: {f(m)}\nhttps://gmgn.ai/robinhood/token/{a}'
     try:
         requests.post(f'https://api.telegram.org/bot{token}/sendMessage',
-            json={'chat_id': chat_id, 'text': msg, 'parse_mode': 'Markdown'}, timeout=10)
+            json={'chat_id': chat_id, 'text': msg, 'parse_mode': 'Markdown'}, timeout=15)
     except: pass
+print(f'Sent {len(tokens)} tokens')
 "
