@@ -1,7 +1,7 @@
 services:
-- type: web_service
+- type: web
+  runtime: python
   name: lp-scout
-  env: python
   plan: free
   region: singapore
   buildCommand: pip install -r requirements.txt
