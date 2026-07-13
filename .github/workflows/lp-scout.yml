@@ -9,13 +9,9 @@ jobs:
   scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
       - name: Install gmgn-cli
         run: npm install -g gmgn-cli
+        
       - name: Run LP Scan
         env:
           GMGN_API_KEY: ${{ secrets.GMGN_API_KEY }}
@@ -27,12 +23,14 @@ jobs:
             --max-volume 1000000 \
             --limit 10 \
             --raw > result.json
+          
       - name: Send to Telegram
         env:
           TG_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          python3 << 'PYTHON'
+          pip install requests -q
+          python3 -c "
 import json, os, requests
 with open('result.json') as f:
     data = json.load(f)
@@ -46,11 +44,10 @@ for t in tokens:
     vol = t.get('volume',0)
     liq = t.get('liquidity',0)
     mc = t.get('market_cap',0)
-    def fmt(n):
-        if n >= 1e6: return f'${n/1e6:.2f}M'
-        if n >= 1e3: return f'${n/1e3:.1f}K'
-        return f'${n:.0f}'
+    fmt = lambda n: f'\${n/1e6:.2f}M' if n>=1e6 else (f'\${n/1e3:.1f}K' if n>=1e3 else f'\${n:.0f}')
     msg = f'🔥 LP Scout - {sym}\n{name}\nVol 5m: {fmt(vol)} | Liq: {fmt(liq)}\nMC: {fmt(mc)}\nhttps://gmgn.ai/robinhood/token/{addr}'
-    requests.post(f'https://api.telegram.org/bot{token}/sendMessage',
-        json={'chat_id': chat_id, 'text': msg, 'parse_mode': 'Markdown'})
-PYTHON
+    try:
+        requests.post(f'https://api.telegram.org/bot{token}/sendMessage',
+            json={'chat_id': chat_id, 'text': msg, 'parse_mode': 'Markdown'}, timeout=10)
+    except: pass
+"
