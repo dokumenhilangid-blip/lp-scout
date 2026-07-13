@@ -6,10 +6,3 @@ services:
   region: singapore
   buildCommand: pip install -r requirements.txt
   startCommand: python lp_scout.py
-  envVars:
-  - key: GMGN_API_KEY
-    value: gmgn_3440d862bbf8db55fe56b420d269c99b
-  - key: TELEGRAM_TOKEN
-    value: "8929960970:AAFh8thrilm2uHWXJnXjarmIxPTylNTDRwk"
-  - key: TELEGRAM_CHAT_ID
-    value: "6303973733"
