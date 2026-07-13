@@ -1,37 +1,11 @@
-name: LP Scout
+name: LP Scout Test
 
 on:
-  schedule:
-    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 jobs:
-  scan:
+  test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Install gmgn-cli
-        env:
-          GMGN_API_KEY: ${{ secrets.GMGN_API_KEY }}
-        run: |
-          npm install -g gmgn-cli
-          gmgn-cli config --apply "$GMGN_API_KEY"
-          
-      - name: Run LP Scan
-        run: |
-          gmgn-cli market trending \
-            --chain robinhood \
-            --interval 5m \
-            --min-volume 10000 \
-            --max-volume 1000000 \
-            --limit 10 \
-            --raw > result.json
-          
-      - name: Send to Telegram
-        env:
-          TG_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-          TG_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          pip install requests -q
-          python3 lp_scout_gh.py
+      - name: Test echo
+        run: echo "Hello from LP Scout"
