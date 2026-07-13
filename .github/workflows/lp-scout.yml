@@ -9,7 +9,9 @@ jobs:
   scan:
     runs-on: ubuntu-latest
     steps:
-      - name: Install gmgn-cli & config
+      - uses: actions/checkout@v4
+      
+      - name: Install gmgn-cli
         env:
           GMGN_API_KEY: ${{ secrets.GMGN_API_KEY }}
         run: |
@@ -21,7 +23,7 @@ jobs:
           gmgn-cli market trending \
             --chain robinhood \
             --interval 5m \
-            --min-volume 50000 \
+            --min-volume 10000 \
             --max-volume 1000000 \
             --limit 10 \
             --raw > result.json
@@ -31,32 +33,5 @@ jobs:
           TG_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          pip install requests -q 2>/dev/null
-          python3 -c "
-import json, os, requests
-with open('result.json') as f:
-    data = json.load(f)
-tokens = data.get('data', {}).get('rank', [])
-token = os.environ['TG_TOKEN']
-chat_id = os.environ['TG_CHAT_ID']
-if not tokens:
-    print('No tokens found')
-    exit(0)
-for t in tokens:
-    n = t.get('name','?')
-    s = t.get('symbol','?')
-    a = t.get('address','')
-    v = t.get('volume',0)
-    l = t.get('liquidity',0)
-    m = t.get('market_cap',0)
-    def f(x):
-        if x>=1e6: return f'${x/1e6:.2f}M'
-        if x>=1e3: return f'${x/1e3:.1f}K'
-        return f'${x:.0f}'
-    msg = f'🔥 LP Scout - {s}\n{n}\nVol: {f(v)} | Liq: {f(l)}\nMC: {f(m)}\nhttps://gmgn.ai/robinhood/token/{a}'
-    try:
-        requests.post(f'https://api.telegram.org/bot{token}/sendMessage',
-            json={'chat_id': chat_id, 'text': msg, 'parse_mode': 'Markdown'}, timeout=15)
-    except: pass
-print(f'Sent {len(tokens)} tokens')
-"
+          pip install requests -q
+          python3 lp_scout_gh.py
