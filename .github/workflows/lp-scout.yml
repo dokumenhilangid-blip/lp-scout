@@ -1,11 +1,8 @@
-name: LP Scout Test
-
+name: LP Scout
 on:
   workflow_dispatch:
-
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: Test echo
-        run: echo "Hello from LP Scout"
+      - run: echo hello
